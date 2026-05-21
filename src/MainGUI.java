@@ -557,22 +557,23 @@ public class MainGUI {
         if (avBikes.isEmpty()){ toast(frame,"No bikes available.",false); return; }
 
         JDialog dlg = new JDialog(frame, "New Rental", true);
-        dlg.setSize(420, 460);
+        dlg.setSize(450, 520); // Slightly increased height for breathing room
         dlg.setLocationRelativeTo(frame);
 
-        JPanel p = new JPanel(new GridLayout(0, 1, 6, 6));
-        p.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
+        // Fixed Grid Layout: Explicitly set to 12 rows to prevent overlapping component shifts
+        JPanel p = new JPanel(new GridLayout(12, 1, 2, 2));
+        p.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         p.setBackground(WHITE);
 
         String[] custItems = custs.stream().map(c->c.getName()+" ("+c.getCustomerId()+") — "+(int)(c.getDiscountRate()*100)+"% off").toArray(String[]::new);
         String[] payItems = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
 
-        // ── 1. COUNT AVAILABLE BIKES BY TYPE ─────────────────────────────────
-        long mountainCount = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Mountain")).count();
-        long bmxCount      = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("BMX")).count();
-        long roadCount     = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Road")).count();
-        long electricCount = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Electric")).count();
-        long japanCount    = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Japanese")).count();
+        // Robust matching usingtoLowerCase().contains() to catch structural type string variations
+        long mountainCount = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("mountain")).count();
+        long bmxCount      = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("bmx")).count();
+        long roadCount     = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("road")).count();
+        long electricCount = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("electric")).count();
+        long japanCount    = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("japan")).count();
 
         String[] bikeItems = {
             "MOUNTAIN (" + mountainCount + " available) — PHP 60.00/hr",
@@ -582,7 +583,6 @@ public class MainGUI {
             "JAPANESE (" + japanCount + " available) — PHP 30.00/hr"
         };
 
-        // ── 2. COUNT AVAILABLE HELMETS BY SIZE ───────────────────────────────
         long smallCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.SMALL).count();
         long mediumCount = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.MEDIUM).count();
         long largeCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.LARGE).count();
@@ -603,20 +603,20 @@ public class MainGUI {
         previewLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         previewLabel.setForeground(MUTED);
 
-        p.add(fieldLabel("Customer")); p.add(cbCust);
-        p.add(fieldLabel("Bike Type")); p.add(cbBike);
-        p.add(fieldLabel("Hours"));    p.add(fHours);
-        p.add(fieldLabel("Helmet"));   p.add(cbHelm);
-        p.add(fieldLabel("Payment"));  p.add(cbPay);
-        p.add(fieldLabel("Cost Preview")); p.add(previewLabel);
+        // Order verified to match UI layout positions
+        p.add(fieldLabel("Customer"));          p.add(cbCust);
+        p.add(fieldLabel("Bike Type"));         p.add(cbBike);
+        p.add(fieldLabel("Hours"));             p.add(fHours);
+        p.add(fieldLabel("Helmet"));           p.add(cbHelm);
+        p.add(fieldLabel("Payment"));          p.add(cbPay);
+        p.add(fieldLabel("Cost Preview"));     p.add(previewLabel);
 
-        // Helper logic to find the rate based on selected bike dropdown index
         java.util.function.Function<Integer, Double> getBikeRate = (index) -> switch(index) {
-            case 0 -> 60.0;  // Mountain
-            case 1 -> 40.0;  // BMX
-            case 2 -> 50.0;  // Road
-            case 3 -> 100.0; // Electric
-            case 4 -> 30.0;  // Japanese
+            case 0 -> 60.0;
+            case 1 -> 40.0;
+            case 2 -> 50.0;
+            case 3 -> 100.0;
+            case 4 -> 30.0;
             default -> 0.0;
         };
 
@@ -638,6 +638,11 @@ public class MainGUI {
         };
         cbCust.addActionListener(preview); cbBike.addActionListener(preview);
         cbHelm.addActionListener(preview); fHours.addActionListener(preview);
+        
+        // Triggers updating dynamic preview computation on typing out hours field directly
+        fHours.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) { preview.actionPerformed(null); }
+        });
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btns.setBackground(WHITE);
@@ -651,18 +656,17 @@ public class MainGUI {
 
             Customer c = custs.get(cbCust.getSelectedIndex());
             
-            // ── 3. MATCH CHOSEN BIKE TYPE TO FIRST AVAILABLE BIKE OBJECT ─────
-            String targetType = switch (cbBike.getSelectedIndex()) {
-                case 0 -> "Mountain";
-                case 1 -> "BMX";
-                case 2 -> "Road";
-                case 3 -> "Electric";
-                case 4 -> "Japanese";
+            String targetKeyword = switch (cbBike.getSelectedIndex()) {
+                case 0 -> "mountain";
+                case 1 -> "bmx";
+                case 2 -> "road";
+                case 3 -> "electric";
+                case 4 -> "japan";
                 default -> "";
             };
 
             Bike b = avBikes.stream()
-                            .filter(bike -> bike.getType().equalsIgnoreCase(targetType))
+                            .filter(bike -> bike.getType().toLowerCase().contains(targetKeyword))
                             .findFirst()
                             .orElse(null);
 
@@ -671,7 +675,6 @@ public class MainGUI {
                 return;
             }
 
-            // ── 4. MATCH CHOSEN HELMET SIZE ──────────────────────────────────
             int helmIndex = cbHelm.getSelectedIndex();
             Helmet helm = null;
             if (helmIndex > 0) {
@@ -695,12 +698,11 @@ public class MainGUI {
             String rid = "R"+c.getCustomerId()+"-"+b.getBikeId();
             if (service.findActiveRental(rid) != null) { toast(dlg,"Active rental already exists for this bike/customer.",false); return; }
 
-            // Process Rental and Toggle states
             Rental rental = new Rental(rid, c, b, hrs, helm);
             service.addRental(rental);
             
-            b.setAvailable(false); // Make bike unavailable
-            if (helm != null) helm.setAvailable(false); // Make helmet unavailable
+            b.setAvailable(false);
+            if (helm != null) helm.setAvailable(false);
 
             String pay = (String) cbPay.getSelectedItem();
             new Payment("P-"+rid, rental.getTotalCost(), Payment.Method.valueOf(pay)).processPayment();
