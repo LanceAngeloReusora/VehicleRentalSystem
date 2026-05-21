@@ -37,13 +37,16 @@ public class MainGUI {
     static String[] cardNames = {"dashboard","customers","bikes","helmets","rentals","reservations","maintenance"};
 
     public static void main(String[] args) {
-        // Seed data
-        service.addBike(new MountainBike("M1","Trek"));
-        service.addBike(new BMXBike("B1","Haro"));
-        service.addBike(new RoadBike("R1","Giant"));
-        service.addBike(new ElectricBike("E1","Xiaomi"));
-        service.addBike(new JapaneseBike("J1","Bridgestone"));
+        // ── SEED EXACTLY 20 BIKES (4 of each type) ───────────────────
+        for (int i = 1; i <= 4; i++) {
+            service.addBike(new MountainBike("M" + i, "Trek"));
+            service.addBike(new BMXBike("B" + i, "Haro"));
+            service.addBike(new RoadBike("R" + i, "Giant"));
+            service.addBike(new ElectricBike("E" + i, "Xiaomi"));
+            service.addBike(new JapaneseBike("J1" + i, "Bridgestone"));
+        }
         
+        // (Helmets are initialized automatically via your service constructor)
 
         SwingUtilities.invokeLater(MainGUI::buildFrame);
     }
@@ -562,10 +565,24 @@ public class MainGUI {
         p.setBackground(WHITE);
 
         String[] custItems = custs.stream().map(c->c.getName()+" ("+c.getCustomerId()+") — "+(int)(c.getDiscountRate()*100)+"% off").toArray(String[]::new);
-        String[] bikeItems = avBikes.stream().map(b->b.getBrand()+" — "+b.getType()+" @ PHP "+b.getRatePerHour()+"/hr ("+b.getBikeId()+")").toArray(String[]::new);
         String[] payItems = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
 
-        // ── NEW HELMET DROP-DOWN LOOK ────────────────────────────────────────
+        // ── 1. COUNT AVAILABLE BIKES BY TYPE ─────────────────────────────────
+        long mountainCount = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Mountain")).count();
+        long bmxCount      = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("BMX")).count();
+        long roadCount     = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Road")).count();
+        long electricCount = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Electric")).count();
+        long japanCount    = avBikes.stream().filter(b -> b.getType().equalsIgnoreCase("Japanese")).count();
+
+        String[] bikeItems = {
+            "MOUNTAIN (" + mountainCount + " available) — PHP 60.00/hr",
+            "BMX (" + bmxCount + " available) — PHP 40.00/hr",
+            "ROAD (" + roadCount + " available) — PHP 50.00/hr",
+            "ELECTRIC (" + electricCount + " available) — PHP 100.00/hr",
+            "JAPANESE (" + japanCount + " available) — PHP 30.00/hr"
+        };
+
+        // ── 2. COUNT AVAILABLE HELMETS BY SIZE ───────────────────────────────
         long smallCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.SMALL).count();
         long mediumCount = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.MEDIUM).count();
         long largeCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.LARGE).count();
@@ -576,7 +593,6 @@ public class MainGUI {
             "MEDIUM (" + mediumCount + " available) — PHP 50",
             "LARGE (" + largeCount + " available) — PHP 50"
         };
-        // ─────────────────────────────────────────────────────────────────────
 
         JComboBox<String> cbCust = combo(custItems);
         JComboBox<String> cbBike = combo(bikeItems);
@@ -588,22 +604,31 @@ public class MainGUI {
         previewLabel.setForeground(MUTED);
 
         p.add(fieldLabel("Customer")); p.add(cbCust);
-        p.add(fieldLabel("Bike"));     p.add(cbBike);
+        p.add(fieldLabel("Bike Type")); p.add(cbBike);
         p.add(fieldLabel("Hours"));    p.add(fHours);
         p.add(fieldLabel("Helmet"));   p.add(cbHelm);
         p.add(fieldLabel("Payment"));  p.add(cbPay);
         p.add(fieldLabel("Cost Preview")); p.add(previewLabel);
 
+        // Helper logic to find the rate based on selected bike dropdown index
+        java.util.function.Function<Integer, Double> getBikeRate = (index) -> switch(index) {
+            case 0 -> 60.0;  // Mountain
+            case 1 -> 40.0;  // BMX
+            case 2 -> 50.0;  // Road
+            case 3 -> 100.0; // Electric
+            case 4 -> 30.0;  // Japanese
+            default -> 0.0;
+        };
+
         ActionListener preview = e -> {
             try {
                 int h = Integer.parseInt(fHours.getText().trim());
-                Bike b = avBikes.get(cbBike.getSelectedIndex());
                 Customer c = custs.get(cbCust.getSelectedIndex());
-                double base = b.getRatePerHour() * h;
+                double rate = getBikeRate.apply(cbBike.getSelectedIndex());
+                
+                double base = rate * h;
                 double disc = base * c.getDiscountRate();
                 double cost = base - disc;
-                
-                // Fixed: registers if anything besides "None" is picked
                 double hFee = cbHelm.getSelectedIndex() > 0 ? 50.0 : 0;
                 
                 previewLabel.setText("<html><b>Total: " + phpFmt(cost+hFee) + "</b>"
@@ -624,21 +649,38 @@ public class MainGUI {
             try { hrs = Integer.parseInt(fHours.getText().trim()); if(hrs<1) throw new Exception(); }
             catch (Exception ex) { toast(dlg,"Enter a valid number of hours.",false); return; }
 
-            Customer c  = custs.get(cbCust.getSelectedIndex());
-            Bike b      = avBikes.get(cbBike.getSelectedIndex());
+            Customer c = custs.get(cbCust.getSelectedIndex());
             
-            // ── NEW SELECTION LOGIC ──────────────────────────────────────────
-            int selectedIndex = cbHelm.getSelectedIndex();
+            // ── 3. MATCH CHOSEN BIKE TYPE TO FIRST AVAILABLE BIKE OBJECT ─────
+            String targetType = switch (cbBike.getSelectedIndex()) {
+                case 0 -> "Mountain";
+                case 1 -> "BMX";
+                case 2 -> "Road";
+                case 3 -> "Electric";
+                case 4 -> "Japanese";
+                default -> "";
+            };
+
+            Bike b = avBikes.stream()
+                            .filter(bike -> bike.getType().equalsIgnoreCase(targetType))
+                            .findFirst()
+                            .orElse(null);
+
+            if (b == null) {
+                toast(dlg, "No available bikes left for this type.", false);
+                return;
+            }
+
+            // ── 4. MATCH CHOSEN HELMET SIZE ──────────────────────────────────
+            int helmIndex = cbHelm.getSelectedIndex();
             Helmet helm = null;
-            
-            if (selectedIndex > 0) {
-                Helmet.Size targetSize = switch (selectedIndex) {
+            if (helmIndex > 0) {
+                Helmet.Size targetSize = switch (helmIndex) {
                     case 1 -> Helmet.Size.SMALL;
                     case 2 -> Helmet.Size.MEDIUM;
                     case 3 -> Helmet.Size.LARGE;
                     default -> null;
                 };
-                
                 helm = avHelm.stream()
                              .filter(h -> h.getSize() == targetSize)
                              .findFirst()
@@ -649,18 +691,16 @@ public class MainGUI {
                     return;
                 }
             }
-            // ─────────────────────────────────────────────────────────────────
 
-            String rid  = "R"+c.getCustomerId()+"-"+b.getBikeId();
+            String rid = "R"+c.getCustomerId()+"-"+b.getBikeId();
             if (service.findActiveRental(rid) != null) { toast(dlg,"Active rental already exists for this bike/customer.",false); return; }
 
+            // Process Rental and Toggle states
             Rental rental = new Rental(rid, c, b, hrs, helm);
             service.addRental(rental);
             
-            // Marks it unavailable in the state system so dashboard numbers change!
-            if (helm != null) {
-                helm.setAvailable(false);
-            }
+            b.setAvailable(false); // Make bike unavailable
+            if (helm != null) helm.setAvailable(false); // Make helmet unavailable
 
             String pay = (String) cbPay.getSelectedItem();
             new Payment("P-"+rid, rental.getTotalCost(), Payment.Method.valueOf(pay)).processPayment();
