@@ -36,23 +36,326 @@ public class MainGUI {
     static String[] navIcons  = {"⊞","👤","🚲","🪖","📋","📅","🔧"};
     static String[] cardNames = {"dashboard","customers","bikes","helmets","rentals","reservations","maintenance"};
 
+    // ═════════════════════════════════════════════════════════════════
+    //  ENTRY POINT — shows login window first
+    // ═════════════════════════════════════════════════════════════════
     public static void main(String[] args) {
-        // ── SEED EXACTLY 20 BIKES (4 of each type) ───────────────────
-        for (int i = 1; i <= 4; i++) {
-            service.addBike(new MountainBike("M" + i, "Trek"));
-            service.addBike(new BMXBike("B" + i, "Haro"));
-            service.addBike(new RoadBike("R" + i, "Giant"));
-            service.addBike(new ElectricBike("E" + i, "Xiaomi"));
-            service.addBike(new JapaneseBike("J1" + i, "Bridgestone"));
-        }
-        
-        // (Helmets are initialized automatically via your service constructor)
-
-        SwingUtilities.invokeLater(MainGUI::buildFrame);
+        SwingUtilities.invokeLater(MainGUI::showLoginWindow);
     }
 
     // ═════════════════════════════════════════════════════════════════
-    //  FRAME
+    //  LOGIN WINDOW
+    // ═════════════════════════════════════════════════════════════════
+    static void showLoginWindow() {
+        JFrame loginFrame = new JFrame("Bike Rental System — Login");
+        loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loginFrame.setSize(420, 560);
+        loginFrame.setResizable(false);
+        loginFrame.setLocationRelativeTo(null);
+
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(BG);
+
+        // ── Header ────────────────────────────────────────────────────
+        JPanel header = new JPanel();
+        header.setBackground(SIDEBAR);
+        header.setBorder(BorderFactory.createEmptyBorder(28, 24, 22, 24));
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+
+        JLabel icon = new JLabel("🚲");
+        icon.setFont(new Font("SansSerif", Font.PLAIN, 40));
+        icon.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel titleLbl = new JLabel("Bike Rental System");
+        titleLbl.setFont(new Font("SansSerif", Font.BOLD, 18));
+        titleLbl.setForeground(WHITE);
+        titleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel subLbl = new JLabel("Sign in to continue");
+        subLbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        subLbl.setForeground(new Color(180, 180, 200));
+        subLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        header.add(icon);
+        header.add(Box.createVerticalStrut(8));
+        header.add(titleLbl);
+        header.add(Box.createVerticalStrut(4));
+        header.add(subLbl);
+
+        // ── Footer ────────────────────────────────────────────────────
+        JPanel footer = new JPanel();
+        footer.setBackground(BG);
+        footer.setBorder(BorderFactory.createEmptyBorder(10, 0, 14, 0));
+        JLabel secLbl = new JLabel("Secured by Firebase Authentication");
+        secLbl.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        secLbl.setForeground(MUTED);
+        footer.add(secLbl);
+
+        // ── Tab buttons ───────────────────────────────────────────────
+        JButton tabLogin  = loginTabBtn("Sign In",       true);
+        JButton tabSignup = loginTabBtn("Create Account", false);
+
+        JPanel tabs = new JPanel(new GridLayout(1, 2, 4, 0));
+        tabs.setBackground(BG);
+        tabs.setBorder(BorderFactory.createEmptyBorder(0, 0, 14, 0));
+        tabs.add(tabLogin);
+        tabs.add(tabSignup);
+
+        // ── Login fields ──────────────────────────────────────────────
+        JTextField     loginEmail    = loginEmailField("your@email.com");
+        JPasswordField loginPassword = loginPasswordField();
+        JLabel         loginError    = loginErrorLabel();
+        JButton        loginBtn      = loginAccentBtn("Sign In");
+
+        JPanel loginCard = new JPanel();
+        loginCard.setBackground(WHITE);
+        loginCard.setLayout(new BoxLayout(loginCard, BoxLayout.Y_AXIS));
+        loginCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel forgotLink = new JLabel("<html><u>Forgot password?</u></html>");
+        forgotLink.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        forgotLink.setForeground(ACCENT);
+        forgotLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        forgotLink.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                String email = JOptionPane.showInputDialog(loginFrame,
+                        "Enter your email to receive a reset link:", "Forgot Password", JOptionPane.PLAIN_MESSAGE);
+                if (email == null || email.trim().isEmpty()) return;
+                boolean sent = FirebaseAuth.sendPasswordReset(email.trim());
+                if (sent) JOptionPane.showMessageDialog(loginFrame, "Reset email sent to " + email.trim(), "Email Sent", JOptionPane.INFORMATION_MESSAGE);
+                else      JOptionPane.showMessageDialog(loginFrame, "Could not send reset email.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        JPanel forgotRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        forgotRow.setBackground(WHITE);
+        forgotRow.add(forgotLink);
+
+        loginCard.add(loginFieldLabel("Email Address"));
+        loginCard.add(Box.createVerticalStrut(4));
+        loginCard.add(loginEmail);
+        loginCard.add(Box.createVerticalStrut(12));
+        loginCard.add(loginFieldLabel("Password"));
+        loginCard.add(Box.createVerticalStrut(4));
+        loginCard.add(loginPasswordRow(loginPassword));
+        loginCard.add(Box.createVerticalStrut(4));
+        loginCard.add(forgotRow);
+        loginCard.add(Box.createVerticalStrut(8));
+        loginCard.add(loginError);
+        loginCard.add(Box.createVerticalStrut(12));
+        loginCard.add(loginBtn);
+
+        // ── Sign-up fields ────────────────────────────────────────────
+        JTextField     signupEmail    = loginEmailField("your@email.com");
+        JPasswordField signupPassword = loginPasswordField();
+        JPasswordField signupConfirm  = loginPasswordField();
+        JLabel         signupError    = loginErrorLabel();
+        JButton        signupBtn      = loginAccentBtn("Create Account");
+
+        JPanel signupCard = new JPanel();
+        signupCard.setBackground(WHITE);
+        signupCard.setLayout(new BoxLayout(signupCard, BoxLayout.Y_AXIS));
+        signupCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        signupCard.add(loginFieldLabel("Email Address"));
+        signupCard.add(Box.createVerticalStrut(4));
+        signupCard.add(signupEmail);
+        signupCard.add(Box.createVerticalStrut(12));
+        signupCard.add(loginFieldLabel("Password  (min. 6 characters)"));
+        signupCard.add(Box.createVerticalStrut(4));
+        signupCard.add(loginPasswordRow(signupPassword));
+        signupCard.add(Box.createVerticalStrut(12));
+        signupCard.add(loginFieldLabel("Confirm Password"));
+        signupCard.add(Box.createVerticalStrut(4));
+        signupCard.add(loginPasswordRow(signupConfirm));
+        signupCard.add(Box.createVerticalStrut(8));
+        signupCard.add(signupError);
+        signupCard.add(Box.createVerticalStrut(12));
+        signupCard.add(signupBtn);
+
+        // ── CardLayout to switch between login / signup ───────────────
+        CardLayout formCL = new CardLayout();
+        JPanel formCards  = new JPanel(formCL);
+        formCards.setBackground(BG);
+
+        JPanel loginOuter  = new JPanel(new BorderLayout()); loginOuter.setBackground(BG);  loginOuter.add(loginCard,  BorderLayout.NORTH);
+        JPanel signupOuter = new JPanel(new BorderLayout()); signupOuter.setBackground(BG); signupOuter.add(signupCard, BorderLayout.NORTH);
+
+        formCards.add(loginOuter,  "login");
+        formCards.add(signupOuter, "signup");
+
+        // Tab switching
+        tabLogin.addActionListener(e -> {
+            formCL.show(formCards, "login");
+            tabLogin .setBackground(ACCENT); tabLogin .setForeground(WHITE);
+            tabSignup.setBackground(WHITE);  tabSignup.setForeground(TEXT);
+            loginError.setText(" "); signupError.setText(" ");
+        });
+        tabSignup.addActionListener(e -> {
+            formCL.show(formCards, "signup");
+            tabSignup.setBackground(ACCENT); tabSignup.setForeground(WHITE);
+            tabLogin .setBackground(WHITE);  tabLogin .setForeground(TEXT);
+            loginError.setText(" "); signupError.setText(" ");
+        });
+
+        // ── Body ──────────────────────────────────────────────────────
+        JPanel body = new JPanel(new BorderLayout());
+        body.setBackground(BG);
+        body.setBorder(BorderFactory.createEmptyBorder(20, 32, 0, 32));
+        body.add(tabs,      BorderLayout.NORTH);
+        body.add(formCards, BorderLayout.CENTER);
+
+        root.add(header, BorderLayout.NORTH);
+        root.add(body,   BorderLayout.CENTER);
+        root.add(footer, BorderLayout.SOUTH);
+
+        loginFrame.setContentPane(root);
+        loginFrame.setVisible(true);
+
+        // ── Login action ──────────────────────────────────────────────
+        loginBtn.addActionListener(e -> {
+            String email = loginEmail.getText().trim();
+            String pass  = new String(loginPassword.getPassword());
+            if (email.isEmpty() || pass.isEmpty()) {
+                loginError.setText("Please enter your email and password."); return;
+            }
+            loginBtn.setText("Please wait…"); loginBtn.setEnabled(false);
+            loginError.setText(" ");
+            new Thread(() -> {
+                FirebaseAuth.AuthResult result = FirebaseAuth.signIn(email, pass);
+                SwingUtilities.invokeLater(() -> {
+                    loginBtn.setText("Sign In"); loginBtn.setEnabled(true);
+                    if (result.success) { loginFrame.dispose(); seedAndLaunch(); }
+                    else                loginError.setText(result.errorMessage);
+                });
+            }).start();
+        });
+
+        // ── Sign-up action ────────────────────────────────────────────
+        signupBtn.addActionListener(e -> {
+            String email   = signupEmail.getText().trim();
+            String pass    = new String(signupPassword.getPassword());
+            String confirm = new String(signupConfirm.getPassword());
+            if (email.isEmpty() || pass.isEmpty()) { signupError.setText("All fields are required."); return; }
+            if (!pass.equals(confirm))             { signupError.setText("Passwords do not match."); return; }
+            if (pass.length() < 6)                 { signupError.setText("Password must be at least 6 characters."); return; }
+            signupBtn.setText("Please wait…"); signupBtn.setEnabled(false);
+            signupError.setText(" ");
+            new Thread(() -> {
+                FirebaseAuth.AuthResult result = FirebaseAuth.signUp(email, pass);
+                SwingUtilities.invokeLater(() -> {
+                    signupBtn.setText("Create Account"); signupBtn.setEnabled(true);
+                    if (result.success) { loginFrame.dispose(); seedAndLaunch(); }
+                    else                signupError.setText(result.errorMessage);
+                });
+            }).start();
+        });
+    }
+
+    // ── Seeds bike data then opens the dashboard ───────────────────────
+    static void seedAndLaunch() {
+        if (service.getBikes().isEmpty()) {
+            for (int i = 1; i <= 4; i++) {
+                service.addBike(new MountainBike("M" + i, "Trek"));
+                service.addBike(new BMXBike("B" + i, "Haro"));
+                service.addBike(new RoadBike("R" + i, "Giant"));
+                service.addBike(new ElectricBike("E" + i, "Xiaomi"));
+                service.addBike(new JapaneseBike("J1" + i, "Bridgestone"));
+            }
+        }
+        buildFrame();
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  LOGIN UI HELPERS  (self-contained, no conflicts with main helpers)
+    // ═════════════════════════════════════════════════════════════════
+    static JTextField loginEmailField(String placeholder) {
+        JTextField f = new JTextField();
+        f.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        f.setToolTipText(placeholder);
+        f.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        f.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(200, 200, 215), 1, true),
+                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+        return f;
+    }
+
+    static JPasswordField loginPasswordField() {
+        JPasswordField f = new JPasswordField();
+        f.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        f.setEchoChar('•');
+        f.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        f.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(200, 200, 215), 1, true),
+                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+        return f;
+    }
+
+    static JPanel loginPasswordRow(JPasswordField pf) {
+        JPanel row = new JPanel(new BorderLayout(4, 0));
+        row.setBackground(WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        JButton toggle = new JButton("👁");
+        toggle.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        toggle.setFocusPainted(false);
+        toggle.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        toggle.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(200, 200, 215), 1, true),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        toggle.setBackground(WHITE);
+        toggle.addActionListener(e -> {
+            if (pf.getEchoChar() == 0) { pf.setEchoChar('•'); toggle.setText("👁"); }
+            else                        { pf.setEchoChar((char) 0); toggle.setText("🙈"); }
+        });
+        row.add(pf, BorderLayout.CENTER);
+        row.add(toggle, BorderLayout.EAST);
+        return row;
+    }
+
+    static JButton loginAccentBtn(String text) {
+        JButton b = new JButton(text);
+        b.setBackground(ACCENT);
+        b.setForeground(WHITE);
+        b.setFont(new Font("SansSerif", Font.BOLD, 13));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        b.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return b;
+    }
+
+    static JButton loginTabBtn(String text, boolean active) {
+        JButton b = new JButton(text);
+        b.setBackground(active ? ACCENT : WHITE);
+        b.setForeground(active ? WHITE  : TEXT);
+        b.setFont(new Font("SansSerif", Font.BOLD, 12));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(200, 200, 215), 1, true),
+                BorderFactory.createEmptyBorder(8, 0, 8, 0)));
+        return b;
+    }
+
+    static JLabel loginFieldLabel(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(new Font("SansSerif", Font.BOLD, 11));
+        l.setForeground(MUTED);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return l;
+    }
+
+    static JLabel loginErrorLabel() {
+        JLabel l = new JLabel(" ");
+        l.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        l.setForeground(DANGER);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return l;
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  MAIN DASHBOARD FRAME
     // ═════════════════════════════════════════════════════════════════
     static void buildFrame() {
         frame = new JFrame("Bike Rental System");
@@ -115,7 +418,7 @@ public class MainGUI {
             btn.setHorizontalAlignment(SwingConstants.LEFT);
             btn.addMouseListener(new MouseAdapter() {
                 public void mouseEntered(MouseEvent e) { if (!btn.getBackground().equals(SIDEBAR_H)) btn.setBackground(SIDEBAR_H); }
-                public void mouseExited (MouseEvent e) { if (!btn.getBackground().equals(ACCENT)) btn.setBackground(SIDEBAR); }
+                public void mouseExited (MouseEvent e) { if (!btn.getBackground().equals(ACCENT))    btn.setBackground(SIDEBAR); }
             });
             btn.addActionListener(e -> navigate(card));
             navButtons[i] = btn;
@@ -136,11 +439,7 @@ public class MainGUI {
         }
         contentPanel.removeAll();
         for (String name : cardNames) {
-            if (name.equals(card)) {
-                contentPanel.add(buildPanel(card), name);
-            } else {
-                contentPanel.add(new JPanel(), name);
-            }
+            contentPanel.add(name.equals(card) ? buildPanel(card) : new JPanel(), name);
         }
         cardLayout.show(contentPanel, card);
         contentPanel.revalidate();
@@ -167,7 +466,6 @@ public class MainGUI {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(BG);
         p.setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
-
         JLabel lbl = new JLabel(title);
         lbl.setFont(new Font("SansSerif", Font.BOLD, 20));
         lbl.setForeground(TEXT);
@@ -272,11 +570,9 @@ public class MainGUI {
     // ═════════════════════════════════════════════════════════════════
     static JPanel dashboardPanel() {
         JPanel page = pageWrapper("Dashboard");
-
         JPanel body = new JPanel(new BorderLayout(16, 16));
         body.setBackground(BG);
 
-        // Stat cards
         JPanel stats = new JPanel(new GridLayout(1, 4, 12, 0));
         stats.setBackground(BG);
         long avBikes   = service.getBikes().stream().filter(Bike::isAvailable).count();
@@ -284,12 +580,11 @@ public class MainGUI {
         long actRent   = service.getRentals().stream().filter(r -> !r.isReturned()).count();
         long actRes    = service.getReservations().stream().filter(Reservation::isActive).count();
 
-        stats.add(statCard("Available Bikes",   String.valueOf(avBikes),  new Color(224, 231, 255)));
-        stats.add(statCard("Active Rentals",    String.valueOf(actRent),  new Color(220, 252, 231)));
-        stats.add(statCard("Reservations",      String.valueOf(actRes),   new Color(254, 249, 195)));
-        stats.add(statCard("Available Helmets", String.valueOf(avHelmets),new Color(255, 237, 213)));
+        stats.add(statCard("Available Bikes",   String.valueOf(avBikes),   new Color(224, 231, 255)));
+        stats.add(statCard("Active Rentals",    String.valueOf(actRent),   new Color(220, 252, 231)));
+        stats.add(statCard("Reservations",      String.valueOf(actRes),    new Color(254, 249, 195)));
+        stats.add(statCard("Available Helmets", String.valueOf(avHelmets), new Color(255, 237, 213)));
 
-        // Recent rentals table
         JPanel tableCard = card();
         tableCard.setLayout(new BorderLayout());
         JLabel tl = new JLabel("Recent Rentals");
@@ -299,8 +594,7 @@ public class MainGUI {
 
         ArrayList<Rental> rent = service.getRentals();
         String[] cols = {"Rental ID","Customer","Bike","Hours","Total","Status"};
-        int n = rent.size();
-        int show = Math.min(8, n);
+        int n = rent.size(), show = Math.min(8, n);
         Object[][] data = new Object[show][6];
         for (int i = 0; i < show; i++) {
             Rental r = rent.get(n - 1 - i);
@@ -358,8 +652,7 @@ public class MainGUI {
         JTable table = buildTable(cols, data);
         table.getColumn("Actions").setCellRenderer(new ButtonRenderer("History"));
         table.getColumn("Actions").setCellEditor(new ButtonEditor(new JCheckBox(), "History", row -> {
-            Customer c = custs.get(row);
-            showHistoryDialog(c);
+            showHistoryDialog(custs.get(row));
         }));
 
         JPanel tableCard = card();
@@ -437,18 +730,22 @@ public class MainGUI {
         header.setBackground(new Color(245, 245, 255));
         header.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
         header.add(bold(c.getName()));
-        header.add(muted("ID: " + c.getCustomerId() + "  |  Contact: " + c.getContact() + "  |  Discount: " + String.format("%.0f%%", c.getDiscountRate()*100)));
+        header.add(muted("ID: " + c.getCustomerId() + "  |  Contact: " + c.getContact()
+                + "  |  Discount: " + String.format("%.0f%%", c.getDiscountRate()*100)));
 
         ArrayList<Rental> cRentals = new ArrayList<>();
-        for (Rental r : service.getRentals()) if (r.getCustomer().getCustomerId().equals(c.getCustomerId())) cRentals.add(r);
+        for (Rental r : service.getRentals())
+            if (r.getCustomer().getCustomerId().equals(c.getCustomerId())) cRentals.add(r);
 
         String[] cols = {"Rental ID","Bike","Hours","Total","Status"};
         Object[][] data = new Object[cRentals.size()][5];
         double total = 0;
         for (int i = 0; i < cRentals.size(); i++) {
             Rental r = cRentals.get(i);
-            data[i] = new Object[]{ r.getRentalId(), r.getBike().getBrand()+" ("+r.getBike().getBikeId()+")",
-                    r.getBookedHours()+"h", phpFmt(r.getTotalCost()), r.isReturned()?"Returned":"Active" };
+            data[i] = new Object[]{ r.getRentalId(),
+                    r.getBike().getBrand()+" ("+r.getBike().getBikeId()+")",
+                    r.getBookedHours()+"h", phpFmt(r.getTotalCost()),
+                    r.isReturned() ? "Returned" : "Active" };
             total += r.getTotalCost();
         }
 
@@ -497,8 +794,8 @@ public class MainGUI {
         Object[][] data = new Object[helmetList.size()][4];
         for (int i = 0; i < helmetList.size(); i++) {
             Helmet h = helmetList.get(i);
-            data[i] = new Object[]{ h.getHelmetId(), h.getSize(), phpFmt(Helmet.getHelmetFee()),
-                    h.isAvailable() ? "Available" : "In Use" };
+            data[i] = new Object[]{ h.getHelmetId(), h.getSize(),
+                    phpFmt(Helmet.getHelmetFee()), h.isAvailable() ? "Available" : "In Use" };
         }
         JPanel tableCard = card();
         tableCard.setLayout(new BorderLayout());
@@ -547,77 +844,69 @@ public class MainGUI {
     }
 
     static void rentDialog() {
-        ArrayList<Customer> custs  = service.getCustomers();
+        ArrayList<Customer> custs   = service.getCustomers();
         ArrayList<Bike>     avBikes = new ArrayList<>();
         for (Bike b : service.getBikes()) if (b.isAvailable()) avBikes.add(b);
-        ArrayList<Helmet>   avHelm = new ArrayList<>();
+        ArrayList<Helmet>   avHelm  = new ArrayList<>();
         for (Helmet h : service.getHelmets()) if (h.isAvailable()) avHelm.add(h);
 
-        if (custs.isEmpty())  { toast(frame,"Register a customer first.",false); return; }
-        if (avBikes.isEmpty()){ toast(frame,"No bikes available.",false); return; }
+        if (custs.isEmpty())   { toast(frame,"Register a customer first.",false); return; }
+        if (avBikes.isEmpty()) { toast(frame,"No bikes available.",false); return; }
 
         JDialog dlg = new JDialog(frame, "New Rental", true);
-        dlg.setSize(450, 520); // Slightly increased height for breathing room
+        dlg.setSize(450, 520);
         dlg.setLocationRelativeTo(frame);
 
-        // Fixed Grid Layout: Explicitly set to 12 rows to prevent overlapping component shifts
         JPanel p = new JPanel(new GridLayout(12, 1, 2, 2));
         p.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         p.setBackground(WHITE);
 
         String[] custItems = custs.stream().map(c->c.getName()+" ("+c.getCustomerId()+") — "+(int)(c.getDiscountRate()*100)+"% off").toArray(String[]::new);
-        String[] payItems = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
+        String[] payItems  = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
 
-        // Robust matching usingtoLowerCase().contains() to catch structural type string variations
-        long mountainCount = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("mountain")).count();
-        long bmxCount      = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("bmx")).count();
-        long roadCount     = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("road")).count();
-        long electricCount = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("electric")).count();
-        long japanCount    = avBikes.stream().filter(b -> b.getType().toLowerCase().contains("japan")).count();
+        long mountainCount = avBikes.stream().filter(b->b.getType().toLowerCase().contains("mountain")).count();
+        long bmxCount      = avBikes.stream().filter(b->b.getType().toLowerCase().contains("bmx")).count();
+        long roadCount     = avBikes.stream().filter(b->b.getType().toLowerCase().contains("road")).count();
+        long electricCount = avBikes.stream().filter(b->b.getType().toLowerCase().contains("electric")).count();
+        long japanCount    = avBikes.stream().filter(b->b.getType().toLowerCase().contains("japan")).count();
 
         String[] bikeItems = {
             "MOUNTAIN (" + mountainCount + " available) — PHP 60.00/hr",
-            "BMX (" + bmxCount + " available) — PHP 40.00/hr",
-            "ROAD (" + roadCount + " available) — PHP 50.00/hr",
+            "BMX ("      + bmxCount      + " available) — PHP 40.00/hr",
+            "ROAD ("     + roadCount     + " available) — PHP 50.00/hr",
             "ELECTRIC (" + electricCount + " available) — PHP 100.00/hr",
-            "JAPANESE (" + japanCount + " available) — PHP 30.00/hr"
+            "JAPANESE (" + japanCount    + " available) — PHP 30.00/hr"
         };
 
-        long smallCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.SMALL).count();
-        long mediumCount = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.MEDIUM).count();
-        long largeCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.LARGE).count();
+        long smallCount  = avHelm.stream().filter(h->h.getSize()==Helmet.Size.SMALL).count();
+        long mediumCount = avHelm.stream().filter(h->h.getSize()==Helmet.Size.MEDIUM).count();
+        long largeCount  = avHelm.stream().filter(h->h.getSize()==Helmet.Size.LARGE).count();
 
         String[] helmItems = {
             "None",
-            "SMALL (" + smallCount + " available) — PHP 50",
+            "SMALL ("  + smallCount  + " available) — PHP 50",
             "MEDIUM (" + mediumCount + " available) — PHP 50",
-            "LARGE (" + largeCount + " available) — PHP 50"
+            "LARGE ("  + largeCount  + " available) — PHP 50"
         };
 
         JComboBox<String> cbCust = combo(custItems);
         JComboBox<String> cbBike = combo(bikeItems);
-        JTextField fHours = field("e.g. 2");
+        JTextField        fHours = field("e.g. 2");
         JComboBox<String> cbHelm = combo(helmItems);
         JComboBox<String> cbPay  = combo(payItems);
         JLabel previewLabel = new JLabel("<html><i>Select options above to see cost.</i></html>");
         previewLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         previewLabel.setForeground(MUTED);
 
-        // Order verified to match UI layout positions
-        p.add(fieldLabel("Customer"));          p.add(cbCust);
-        p.add(fieldLabel("Bike Type"));         p.add(cbBike);
-        p.add(fieldLabel("Hours"));             p.add(fHours);
-        p.add(fieldLabel("Helmet"));           p.add(cbHelm);
-        p.add(fieldLabel("Payment"));          p.add(cbPay);
-        p.add(fieldLabel("Cost Preview"));     p.add(previewLabel);
+        p.add(fieldLabel("Customer"));     p.add(cbCust);
+        p.add(fieldLabel("Bike Type"));    p.add(cbBike);
+        p.add(fieldLabel("Hours"));        p.add(fHours);
+        p.add(fieldLabel("Helmet"));       p.add(cbHelm);
+        p.add(fieldLabel("Payment"));      p.add(cbPay);
+        p.add(fieldLabel("Cost Preview")); p.add(previewLabel);
 
-        java.util.function.Function<Integer, Double> getBikeRate = (index) -> switch(index) {
-            case 0 -> 60.0;
-            case 1 -> 40.0;
-            case 2 -> 50.0;
-            case 3 -> 100.0;
-            case 4 -> 30.0;
-            default -> 0.0;
+        java.util.function.Function<Integer,Double> getBikeRate = idx -> switch(idx) {
+            case 0 -> 60.0; case 1 -> 40.0; case 2 -> 50.0; case 3 -> 100.0; case 4 -> 30.0; default -> 0.0;
         };
 
         ActionListener preview = e -> {
@@ -625,12 +914,8 @@ public class MainGUI {
                 int h = Integer.parseInt(fHours.getText().trim());
                 Customer c = custs.get(cbCust.getSelectedIndex());
                 double rate = getBikeRate.apply(cbBike.getSelectedIndex());
-                
-                double base = rate * h;
-                double disc = base * c.getDiscountRate();
-                double cost = base - disc;
+                double base = rate * h, disc = base * c.getDiscountRate(), cost = base - disc;
                 double hFee = cbHelm.getSelectedIndex() > 0 ? 50.0 : 0;
-                
                 previewLabel.setText("<html><b>Total: " + phpFmt(cost+hFee) + "</b>"
                         + (disc>0?" <font color=gray>(discount: "+phpFmt(disc)+")</font>":"")
                         + (hFee>0?" + helmet PHP 50":"") + "</html>");
@@ -638,8 +923,6 @@ public class MainGUI {
         };
         cbCust.addActionListener(preview); cbBike.addActionListener(preview);
         cbHelm.addActionListener(preview); fHours.addActionListener(preview);
-        
-        // Triggers updating dynamic preview computation on typing out hours field directly
         fHours.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) { preview.actionPerformed(null); }
         });
@@ -655,52 +938,28 @@ public class MainGUI {
             catch (Exception ex) { toast(dlg,"Enter a valid number of hours.",false); return; }
 
             Customer c = custs.get(cbCust.getSelectedIndex());
-            
-            String targetKeyword = switch (cbBike.getSelectedIndex()) {
-                case 0 -> "mountain";
-                case 1 -> "bmx";
-                case 2 -> "road";
-                case 3 -> "electric";
-                case 4 -> "japan";
-                default -> "";
+            String targetKeyword = switch(cbBike.getSelectedIndex()) {
+                case 0 -> "mountain"; case 1 -> "bmx"; case 2 -> "road";
+                case 3 -> "electric"; case 4 -> "japan"; default -> "";
             };
-
-            Bike b = avBikes.stream()
-                            .filter(bike -> bike.getType().toLowerCase().contains(targetKeyword))
-                            .findFirst()
-                            .orElse(null);
-
-            if (b == null) {
-                toast(dlg, "No available bikes left for this type.", false);
-                return;
-            }
+            Bike b = avBikes.stream().filter(bike->bike.getType().toLowerCase().contains(targetKeyword)).findFirst().orElse(null);
+            if (b == null) { toast(dlg,"No available bikes left for this type.",false); return; }
 
             int helmIndex = cbHelm.getSelectedIndex();
             Helmet helm = null;
             if (helmIndex > 0) {
-                Helmet.Size targetSize = switch (helmIndex) {
-                    case 1 -> Helmet.Size.SMALL;
-                    case 2 -> Helmet.Size.MEDIUM;
-                    case 3 -> Helmet.Size.LARGE;
-                    default -> null;
+                Helmet.Size targetSize = switch(helmIndex) {
+                    case 1 -> Helmet.Size.SMALL; case 2 -> Helmet.Size.MEDIUM; case 3 -> Helmet.Size.LARGE; default -> null;
                 };
-                helm = avHelm.stream()
-                             .filter(h -> h.getSize() == targetSize)
-                             .findFirst()
-                             .orElse(null);
-                             
-                if (helm == null) {
-                    toast(dlg, "No available helmets left for this size.", false);
-                    return;
-                }
+                helm = avHelm.stream().filter(h->h.getSize()==targetSize).findFirst().orElse(null);
+                if (helm == null) { toast(dlg,"No available helmets left for this size.",false); return; }
             }
 
             String rid = "R"+c.getCustomerId()+"-"+b.getBikeId();
-            if (service.findActiveRental(rid) != null) { toast(dlg,"Active rental already exists for this bike/customer.",false); return; }
+            if (service.findActiveRental(rid) != null) { toast(dlg,"Active rental already exists.",false); return; }
 
             Rental rental = new Rental(rid, c, b, hrs, helm);
             service.addRental(rental);
-            
             b.setAvailable(false);
             if (helm != null) helm.setAvailable(false);
 
@@ -708,7 +967,7 @@ public class MainGUI {
             new Payment("P-"+rid, rental.getTotalCost(), Payment.Method.valueOf(pay)).processPayment();
             dlg.dispose();
             navigate("rentals");
-            toast(frame, "Rental created! Payment received via "+pay, true);
+            toast(frame,"Rental created! Payment received via "+pay,true);
         });
         btns.add(cancel); btns.add(ok);
 
@@ -732,18 +991,18 @@ public class MainGUI {
         p.setBackground(WHITE);
 
         String[] rentItems = active.stream().map(r->r.getRentalId()+" — "+r.getCustomer().getName()+" / "+r.getBike().getBrand()+" ("+r.getBookedHours()+"h booked)").toArray(String[]::new);
-        JComboBox<String> cbRent = combo(rentItems);
-        JTextField fActual = field("Must be >= booked hours");
-        JComboBox<String> cbCond = combo(new String[]{"GOOD","DAMAGED (+PHP 500)"});
-        JComboBox<String> cbPay  = combo(new String[]{"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"});
+        JComboBox<String> cbRent  = combo(rentItems);
+        JTextField        fActual = field("Must be >= booked hours");
+        JComboBox<String> cbCond  = combo(new String[]{"GOOD","DAMAGED (+PHP 500)"});
+        JComboBox<String> cbPay   = combo(new String[]{"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"});
         JLabel previewLabel = new JLabel(" ");
         previewLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
-        p.add(fieldLabel("Rental"));        p.add(cbRent);
-        p.add(fieldLabel("Actual Hours"));  p.add(fActual);
-        p.add(fieldLabel("Bike Condition")); p.add(cbCond);
-        p.add(fieldLabel("Payment (extra charges)")); p.add(cbPay);
-        p.add(fieldLabel("Summary")); p.add(previewLabel);
+        p.add(fieldLabel("Rental"));                    p.add(cbRent);
+        p.add(fieldLabel("Actual Hours"));              p.add(fActual);
+        p.add(fieldLabel("Bike Condition"));            p.add(cbCond);
+        p.add(fieldLabel("Payment (extra charges)"));   p.add(cbPay);
+        p.add(fieldLabel("Summary"));                   p.add(previewLabel);
 
         ActionListener preview = e -> {
             try {
@@ -772,10 +1031,7 @@ public class MainGUI {
             if (act < r.getBookedHours()) { toast(dlg,"Actual hours cannot be less than booked hours ("+r.getBookedHours()+").",false); return; }
             Bike.Condition cond = cbCond.getSelectedIndex()==1 ? Bike.Condition.DAMAGED : Bike.Condition.GOOD;
             r.returnBike(act, cond);
-            // ── ADD THIS SCRIPT HERE TOO ─────────────────────────────
-            if (r.getHelmet() != null) {
-                r.getHelmet().setAvailable(true); // Returns the helmet back to inventory
-            }
+            if (r.getHelmet() != null) r.getHelmet().setAvailable(true);
             double extras = r.getLateFee() + r.getDamagePenalty();
             if (extras > 0) {
                 String pay = (String) cbPay.getSelectedItem();
@@ -783,7 +1039,7 @@ public class MainGUI {
             }
             dlg.dispose();
             navigate("rentals");
-            toast(frame, "Bike returned!" + (extras>0?" Extra charges collected.":"" ), true);
+            toast(frame,"Bike returned!"+(extras>0?" Extra charges collected.":""),true);
         });
         btns.add(cancel); btns.add(ok);
 
@@ -831,7 +1087,8 @@ public class MainGUI {
                         JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
                 if (choice == 0) {
                     String[] pays = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
-                    String pay = (String) JOptionPane.showInputDialog(frame,"Select payment method:","Payment",JOptionPane.PLAIN_MESSAGE,null,pays,"CASH");
+                    String pay = (String) JOptionPane.showInputDialog(frame,"Select payment method:","Payment",
+                            JOptionPane.PLAIN_MESSAGE, null, pays, "CASH");
                     if (pay == null) return;
                     Rental confirmed = r.confirmReservation();
                     if (confirmed != null) {
@@ -852,7 +1109,7 @@ public class MainGUI {
         tableCard.setLayout(new BorderLayout());
         tableCard.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        JPanel body = new JPanel(new BorderLayout(0,10));
+        JPanel body = new JPanel(new BorderLayout(0, 10));
         body.setBackground(BG);
         body.add(top, BorderLayout.NORTH);
         body.add(tableCard, BorderLayout.CENTER);
@@ -872,8 +1129,8 @@ public class MainGUI {
         dlg.setSize(380, 260);
         dlg.setLocationRelativeTo(frame);
 
-        JPanel p = new JPanel(new GridLayout(0,1,6,6));
-        p.setBorder(BorderFactory.createEmptyBorder(16,16,8,16));
+        JPanel p = new JPanel(new GridLayout(0, 1, 6, 6));
+        p.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
         p.setBackground(WHITE);
 
         String[] custItems = custs.stream().map(c->c.getName()+" ("+c.getCustomerId()+")").toArray(String[]::new);
@@ -890,7 +1147,7 @@ public class MainGUI {
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btns.setBackground(WHITE);
         JButton cancel = secondaryBtn("Cancel");
-        JButton ok = primaryBtn("Reserve");
+        JButton ok     = primaryBtn("Reserve");
         cancel.addActionListener(e -> dlg.dispose());
         ok.addActionListener(e -> {
             int hrs;
@@ -900,8 +1157,7 @@ public class MainGUI {
             Bike b     = avBikes.get(cbBike.getSelectedIndex());
             String rid = "RES"+c.getCustomerId()+"-"+b.getBikeId();
             if (service.findActiveReservation(rid) != null) { toast(dlg,"Active reservation already exists.",false); return; }
-            Reservation res = new Reservation(rid, c, b, LocalDateTime.now(), hrs);
-            service.addReservation(res);
+            service.addReservation(new Reservation(rid, c, b, LocalDateTime.now(), hrs));
             dlg.dispose();
             navigate("reservations");
             toast(frame,"Reservation created: "+rid,true);
@@ -960,6 +1216,7 @@ public class MainGUI {
         l.setFont(new Font("SansSerif", Font.BOLD, 13));
         return l;
     }
+
     static JLabel muted(String text) {
         JLabel l = new JLabel(text);
         l.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -974,8 +1231,7 @@ public class MainGUI {
         String label;
         ButtonRenderer(String label) { this.label = label; }
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int r, int c) {
-            JButton btn = secondaryBtn(v != null ? v.toString() : label);
-            return btn;
+            return secondaryBtn(v != null ? v.toString() : label);
         }
     }
 
