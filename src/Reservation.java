@@ -11,7 +11,7 @@ public class Reservation {
     private boolean isActive;
 
     public Reservation(String reservationId, Customer customer, Bike bike,
-                       LocalDateTime reservationDateTime, int reservedHours) {
+            LocalDateTime reservationDateTime, int reservedHours) {
 
         this.reservationId = reservationId;
         this.customer = customer;
@@ -76,16 +76,14 @@ public class Reservation {
                 "R" + reservationId,
                 customer,
                 bike,
-                reservedHours
-        );
+                reservedHours);
     }
 
     // ---------- Display Reservation ----------
 
     public void displayReservation() {
 
-        DateTimeFormatter format =
-                DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
+        DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
 
         System.out.println("\n===== RESERVATION DETAILS =====");
         System.out.println("Reservation ID : " + reservationId);
@@ -103,5 +101,9 @@ public class Reservation {
                 + (isActive ? "Active" : "Completed/Cancelled"));
 
         System.out.println("================================\n");
+    }
+
+    public int getBookedHoursLabel() {
+        return reservedHours;
     }
 }

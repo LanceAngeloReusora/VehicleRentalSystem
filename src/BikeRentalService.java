@@ -262,4 +262,11 @@ public class BikeRentalService {
         System.out.println("  [✓] Bike \"" + bikeId + "\" cleared from maintenance and is now available.");
         return true;
     }
+
+    // ---------- List Getters (used by GUI) ----------
+    public ArrayList<Bike> getBikes()                  { return bikes; }
+    public ArrayList<Customer> getCustomers()           { return customers; }
+    public ArrayList<Rental> getRentals()               { return rentals; }
+    public ArrayList<Reservation> getReservations()     { return reservations; }
+    public ArrayList<Helmet> getHelmets()               { return helmets; }
 }
