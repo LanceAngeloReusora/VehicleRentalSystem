@@ -207,10 +207,7 @@ public class Main {
 
         // ── HELMET ADDED #2 ───────────────────────────────────────
         // Helmets added to service right below the bikes
-        service.addHelmet(new Helmet("H1", Helmet.Size.SMALL));
-        service.addHelmet(new Helmet("H2", Helmet.Size.MEDIUM));
-        service.addHelmet(new Helmet("H3", Helmet.Size.LARGE));
-        service.addHelmet(new Helmet("H4", Helmet.Size.MEDIUM));
+        
         // ──────────────────────────────────────────────────────────
 
         while (true) {

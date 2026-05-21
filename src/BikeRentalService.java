@@ -8,6 +8,19 @@ public class BikeRentalService {
     private ArrayList<Reservation> reservations = new ArrayList<>();
     private ArrayList<Helmet> helmets = new ArrayList<>();
 
+public BikeRentalService() {
+        // 1. Wipe out any existing helmets that other files might have sneaked in
+        helmets.clear(); 
+        
+        // 2. Generate exactly 30 fresh helmets (10 of each size)
+        for (int i = 1; i <= 10; i++) {
+            helmets.add(new Helmet("H-S" + i, Helmet.Size.SMALL));
+            helmets.add(new Helmet("H-M" + i, Helmet.Size.MEDIUM));
+            helmets.add(new Helmet("H-L" + i, Helmet.Size.LARGE));
+        }
+    }
+
+
     // ---------- Add / Register ----------
 
     public boolean addBike(Bike bike) {

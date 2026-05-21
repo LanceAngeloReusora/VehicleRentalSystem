@@ -43,10 +43,7 @@ public class MainGUI {
         service.addBike(new RoadBike("R1","Giant"));
         service.addBike(new ElectricBike("E1","Xiaomi"));
         service.addBike(new JapaneseBike("J1","Bridgestone"));
-        service.addHelmet(new Helmet("H1", Helmet.Size.SMALL));
-        service.addHelmet(new Helmet("H2", Helmet.Size.MEDIUM));
-        service.addHelmet(new Helmet("H3", Helmet.Size.LARGE));
-        service.addHelmet(new Helmet("H4", Helmet.Size.MEDIUM));
+        
 
         SwingUtilities.invokeLater(MainGUI::buildFrame);
     }
@@ -566,10 +563,20 @@ public class MainGUI {
 
         String[] custItems = custs.stream().map(c->c.getName()+" ("+c.getCustomerId()+") — "+(int)(c.getDiscountRate()*100)+"% off").toArray(String[]::new);
         String[] bikeItems = avBikes.stream().map(b->b.getBrand()+" — "+b.getType()+" @ PHP "+b.getRatePerHour()+"/hr ("+b.getBikeId()+")").toArray(String[]::new);
-        String[] helmItems = new String[avHelm.size()+1];
-        helmItems[0] = "None";
-        for (int i=0; i<avHelm.size(); i++) helmItems[i+1] = avHelm.get(i).getHelmetId()+" ("+avHelm.get(i).getSize()+") — PHP 50";
         String[] payItems = {"CASH","GCASH","MAYA","CREDIT_DEBIT","BANK_TRANSFER"};
+
+        // ── NEW HELMET DROP-DOWN LOOK ────────────────────────────────────────
+        long smallCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.SMALL).count();
+        long mediumCount = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.MEDIUM).count();
+        long largeCount  = avHelm.stream().filter(h -> h.getSize() == Helmet.Size.LARGE).count();
+
+        String[] helmItems = {
+            "None",
+            "SMALL (" + smallCount + " available) — PHP 50",
+            "MEDIUM (" + mediumCount + " available) — PHP 50",
+            "LARGE (" + largeCount + " available) — PHP 50"
+        };
+        // ─────────────────────────────────────────────────────────────────────
 
         JComboBox<String> cbCust = combo(custItems);
         JComboBox<String> cbBike = combo(bikeItems);
@@ -595,7 +602,10 @@ public class MainGUI {
                 double base = b.getRatePerHour() * h;
                 double disc = base * c.getDiscountRate();
                 double cost = base - disc;
+                
+                // Fixed: registers if anything besides "None" is picked
                 double hFee = cbHelm.getSelectedIndex() > 0 ? 50.0 : 0;
+                
                 previewLabel.setText("<html><b>Total: " + phpFmt(cost+hFee) + "</b>"
                         + (disc>0?" <font color=gray>(discount: "+phpFmt(disc)+")</font>":"")
                         + (hFee>0?" + helmet PHP 50":"") + "</html>");
@@ -616,12 +626,42 @@ public class MainGUI {
 
             Customer c  = custs.get(cbCust.getSelectedIndex());
             Bike b      = avBikes.get(cbBike.getSelectedIndex());
-            Helmet helm = cbHelm.getSelectedIndex()>0 ? avHelm.get(cbHelm.getSelectedIndex()-1) : null;
+            
+            // ── NEW SELECTION LOGIC ──────────────────────────────────────────
+            int selectedIndex = cbHelm.getSelectedIndex();
+            Helmet helm = null;
+            
+            if (selectedIndex > 0) {
+                Helmet.Size targetSize = switch (selectedIndex) {
+                    case 1 -> Helmet.Size.SMALL;
+                    case 2 -> Helmet.Size.MEDIUM;
+                    case 3 -> Helmet.Size.LARGE;
+                    default -> null;
+                };
+                
+                helm = avHelm.stream()
+                             .filter(h -> h.getSize() == targetSize)
+                             .findFirst()
+                             .orElse(null);
+                             
+                if (helm == null) {
+                    toast(dlg, "No available helmets left for this size.", false);
+                    return;
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             String rid  = "R"+c.getCustomerId()+"-"+b.getBikeId();
             if (service.findActiveRental(rid) != null) { toast(dlg,"Active rental already exists for this bike/customer.",false); return; }
 
             Rental rental = new Rental(rid, c, b, hrs, helm);
             service.addRental(rental);
+            
+            // Marks it unavailable in the state system so dashboard numbers change!
+            if (helm != null) {
+                helm.setAvailable(false);
+            }
+
             String pay = (String) cbPay.getSelectedItem();
             new Payment("P-"+rid, rental.getTotalCost(), Payment.Method.valueOf(pay)).processPayment();
             dlg.dispose();
@@ -690,6 +730,10 @@ public class MainGUI {
             if (act < r.getBookedHours()) { toast(dlg,"Actual hours cannot be less than booked hours ("+r.getBookedHours()+").",false); return; }
             Bike.Condition cond = cbCond.getSelectedIndex()==1 ? Bike.Condition.DAMAGED : Bike.Condition.GOOD;
             r.returnBike(act, cond);
+            // ── ADD THIS SCRIPT HERE TOO ─────────────────────────────
+            if (r.getHelmet() != null) {
+                r.getHelmet().setAvailable(true); // Returns the helmet back to inventory
+            }
             double extras = r.getLateFee() + r.getDamagePenalty();
             if (extras > 0) {
                 String pay = (String) cbPay.getSelectedItem();
