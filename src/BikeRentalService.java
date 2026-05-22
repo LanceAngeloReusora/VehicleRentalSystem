@@ -8,18 +8,13 @@ public class BikeRentalService {
     private ArrayList<Reservation> reservations = new ArrayList<>();
     private ArrayList<Helmet> helmets = new ArrayList<>();
 
-public BikeRentalService() {
-        // 1. Wipe out any existing helmets that other files might have sneaked in
-        helmets.clear(); 
-        
-        // 2. Generate exactly 30 fresh helmets (10 of each size)
+    public BikeRentalService() {
         for (int i = 1; i <= 10; i++) {
             helmets.add(new Helmet("H-S" + i, Helmet.Size.SMALL));
             helmets.add(new Helmet("H-M" + i, Helmet.Size.MEDIUM));
             helmets.add(new Helmet("H-L" + i, Helmet.Size.LARGE));
         }
     }
-
 
     // ---------- Add / Register ----------
 
@@ -70,24 +65,26 @@ public BikeRentalService() {
                 found = true;
             }
         }
-        if (!found) {
+        if (!found)
             System.out.println("  No bikes available at the moment.");
-        }
         System.out.println();
     }
 
     public void displayAvailableHelmets() {
         System.out.println("\n===== AVAILABLE HELMETS =====");
+        long available = 0;
         boolean found = false;
         for (Helmet helmet : helmets) {
             if (helmet.isAvailable()) {
                 helmet.displayInfo();
                 found = true;
+                available++;
             }
         }
-        if (!found) {
+        if (!found)
             System.out.println("  No helmets available at the moment.");
-        }
+        else
+            System.out.println("  Total available: " + available + " / " + helmets.size());
         System.out.println();
     }
 
@@ -101,9 +98,8 @@ public BikeRentalService() {
                 found = true;
             }
         }
-        if (!found) {
+        if (!found)
             System.out.println("  No active rentals.");
-        }
         System.out.println();
     }
 
@@ -116,15 +112,13 @@ public BikeRentalService() {
                 found = true;
             }
         }
-        if (!found) {
+        if (!found)
             System.out.println("  No active reservations.");
-        }
         System.out.println();
     }
 
     public void displayRentalHistory(String customerId) {
         Customer customer = findCustomer(customerId);
-
         if (customer == null) {
             System.out.println("  [!] Customer not found.\n");
             return;
@@ -153,12 +147,10 @@ public BikeRentalService() {
                 System.out.println("Hours     : " + rental.getBookedHours());
                 System.out.println("Cost      : PHP " + rental.getTotalCost());
                 System.out.println("Status    : " + (rental.isReturned() ? "Returned" : "Active"));
-                if (rental.getLateFee() > 0) {
+                if (rental.getLateFee() > 0)
                     System.out.println("Late Fee  : PHP " + rental.getLateFee());
-                }
-                if (rental.getDamagePenalty() > 0) {
+                if (rental.getDamagePenalty() > 0)
                     System.out.println("Damage Fee: PHP " + rental.getDamagePenalty());
-                }
                 System.out.println("--------------------------");
                 totalRentals++;
                 totalSpent += rental.getTotalCost();
@@ -172,58 +164,65 @@ public BikeRentalService() {
             System.out.println("Total Rentals : " + totalRentals);
             System.out.println("Total Spent   : PHP " + totalSpent);
         }
-
         System.out.println("==========================\n");
     }
 
     // ---------- Search ----------
 
     public Customer findCustomer(String id) {
-        for (Customer c : customers) {
-            if (c.getCustomerId().equals(id)) return c;
-        }
+        for (Customer c : customers)
+            if (c.getCustomerId().equals(id))
+                return c;
         return null;
     }
 
     public Bike findBikeById(String id) {
-        for (Bike b : bikes) {
-            if (b.getBikeId().equals(id)) return b;
-        }
+        for (Bike b : bikes)
+            if (b.getBikeId().equals(id))
+                return b;
         return null;
     }
 
     public Bike findBike(String id) {
-        for (Bike b : bikes) {
-            if (b.getBikeId().equals(id) && b.isAvailable()) return b;
-        }
+        for (Bike b : bikes)
+            if (b.getBikeId().equals(id) && b.isAvailable())
+                return b;
         return null;
     }
 
     public Rental findActiveRental(String rentalId) {
-        for (Rental r : rentals) {
-            if (r.getRentalId().equals(rentalId) && !r.isReturned()) return r;
-        }
+        for (Rental r : rentals)
+            if (r.getRentalId().equals(rentalId) && !r.isReturned())
+                return r;
         return null;
     }
 
     public Reservation findActiveReservation(String reservationId) {
-        for (Reservation r : reservations) {
-            if (r.getReservationId().equals(reservationId) && r.isActive()) return r;
-        }
+        for (Reservation r : reservations)
+            if (r.getReservationId().equals(reservationId) && r.isActive())
+                return r;
         return null;
     }
 
     public Helmet findAvailableHelmet(String helmetId) {
-        for (Helmet h : helmets) {
-            if (h.getHelmetId().equals(helmetId) && h.isAvailable()) return h;
-        }
+        for (Helmet h : helmets)
+            if (h.getHelmetId().equals(helmetId) && h.isAvailable())
+                return h;
+        return null;
+    }
+
+    /** Find any available helmet of the given size — used by GUI. */
+    public Helmet findAvailableHelmetBySize(Helmet.Size size) {
+        for (Helmet h : helmets)
+            if (h.isAvailable() && h.getSize() == size)
+                return h;
         return null;
     }
 
     public boolean hasAvailableHelmet() {
-        for (Helmet h : helmets) {
-            if (h.isAvailable()) return true;
-        }
+        for (Helmet h : helmets)
+            if (h.isAvailable())
+                return true;
         return false;
     }
 
@@ -238,9 +237,8 @@ public BikeRentalService() {
                 found = true;
             }
         }
-        if (!found) {
+        if (!found)
             System.out.println("  No bikes are currently under maintenance.");
-        }
         System.out.println();
     }
 
@@ -276,10 +274,25 @@ public BikeRentalService() {
         return true;
     }
 
-    // ---------- List Getters (used by GUI) ----------
-    public ArrayList<Bike> getBikes()                  { return bikes; }
-    public ArrayList<Customer> getCustomers()           { return customers; }
-    public ArrayList<Rental> getRentals()               { return rentals; }
-    public ArrayList<Reservation> getReservations()     { return reservations; }
-    public ArrayList<Helmet> getHelmets()               { return helmets; }
+    // ---------- List Getters — return defensive copies so callers cannot mutate
+    // internal state ----------
+    public ArrayList<Bike> getBikes() {
+        return new ArrayList<>(bikes);
+    }
+
+    public ArrayList<Customer> getCustomers() {
+        return new ArrayList<>(customers);
+    }
+
+    public ArrayList<Rental> getRentals() {
+        return new ArrayList<>(rentals);
+    }
+
+    public ArrayList<Reservation> getReservations() {
+        return new ArrayList<>(reservations);
+    }
+
+    public ArrayList<Helmet> getHelmets() {
+        return new ArrayList<>(helmets);
+    }
 }

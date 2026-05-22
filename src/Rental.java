@@ -5,7 +5,7 @@ public class Rental {
     private String rentalId;
     private Customer customer;
     private Bike bike;
-    private Helmet helmet;           // nullable — optional
+    private Helmet helmet; // nullable — optional
     private int bookedHours;
     private int actualHours;
     private double baseCost;
@@ -29,9 +29,7 @@ public class Rental {
         this.bookedHours = bookedHours;
         this.actualHours = bookedHours;
 
-        double originalCost = bike.calculateRentalCost(bookedHours);
-        this.baseCost = originalCost - (originalCost * customer.getDiscountRate());
-
+        this.baseCost = bike.calculateRentalCost(bookedHours);
         this.helmetFee = (helmet != null) ? Helmet.getHelmetFee() : 0;
         this.lateFee = 0;
         this.damagePenalty = 0;
@@ -45,21 +43,56 @@ public class Rental {
         }
     }
 
-    public String getRentalId()       { return rentalId; }
-    public Customer getCustomer()     { return customer; }
-    public Bike getBike()             { return bike; }
-    public Helmet getHelmet()         { return helmet; }
-    public int getBookedHours()       { return bookedHours; }
-    public double getBaseCost()       { return baseCost; }
-    public double getHelmetFee()      { return helmetFee; }
-    public double getLateFee()        { return lateFee; }
-    public double getDamagePenalty()  { return damagePenalty; }
-    public double getTotalCost()      { return totalCost; }
-    public boolean isReturned()       { return isReturned; }
+    public String getRentalId() {
+        return rentalId;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public Bike getBike() {
+        return bike;
+    }
+
+    public Helmet getHelmet() {
+        return helmet;
+    }
+
+    public int getBookedHours() {
+        return bookedHours;
+    }
+
+    public double getBaseCost() {
+        return baseCost;
+    }
+
+    public double getHelmetFee() {
+        return helmetFee;
+    }
+
+    public double getLateFee() {
+        return lateFee;
+    }
+
+    public double getDamagePenalty() {
+        return damagePenalty;
+    }
+
+    public double getTotalCost() {
+        return totalCost;
+    }
+
+    public boolean isReturned() {
+        return isReturned;
+    }
 
     public void returnBike(int actualHours, Bike.Condition condition) {
-        this.actualHours = actualHours;
+        // Mark returned immediately — if anything below throws, the rental
+        // is still considered closed rather than left in a half-returned state.
+        this.isReturned = true;
 
+        this.actualHours = actualHours;
         bike.setCondition(condition);
 
         if (actualHours > bookedHours) {
@@ -74,13 +107,11 @@ public class Rental {
             bike.setAvailable(true);
         }
 
-        // Return helmet when bike is returned
         if (helmet != null) {
             helmet.setAvailable(true);
         }
 
         this.totalCost = baseCost + helmetFee + lateFee + damagePenalty;
-        this.isReturned = true;
     }
 
     public void displayRental() {
@@ -100,17 +131,12 @@ public class Rental {
         System.out.println("Actual Hours  : " + actualHours);
         System.out.println("Base Cost     : PHP " + baseCost);
 
-        if (helmetFee > 0) {
+        if (helmetFee > 0)
             System.out.println("Helmet Fee    : PHP " + helmetFee);
-        }
-
-        if (lateFee > 0) {
+        if (lateFee > 0)
             System.out.println("Late Fee      : PHP " + lateFee);
-        }
-
-        if (damagePenalty > 0) {
+        if (damagePenalty > 0)
             System.out.println("Damage Penalty: PHP " + damagePenalty);
-        }
 
         System.out.println("Total Cost    : PHP " + totalCost);
         System.out.println("Status        : " + (isReturned ? "Returned" : "Active"));
